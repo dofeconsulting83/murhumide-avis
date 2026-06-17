@@ -101,6 +101,8 @@ Règles strictes :
 - ${nbPoints <= 1 ? "2 à 3 phrases maximum, reste concis" : "3 à 4 phrases, sans répéter"}
 - Première personne
 - Mentionner la ville et le(s) traitement(s) de façon fluide
+- Orthographe et grammaire françaises irréprochables — aucune faute, aucune coquille
+- Accents corrects sur tous les mots (é, è, ê, à, ù, ç…)
 - Pas de guillemets, pas de titre, pas de mise en forme`;
 
     try {
