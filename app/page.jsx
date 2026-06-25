@@ -3,48 +3,103 @@
 import { useState, useCallback, useEffect } from "react";
 import { LOCATIONS } from "@/lib/locations";
 
-// Config chargée dynamiquement selon ?id=mh13 dans l'URL du QR code
-
-const PRESTATIONS = [
-  "Traitement remontées capillaires",
-  "Traitement anti-salpêtre",
-  "Traitement des moisissures",
-  "Traitement d'infiltrations",
-  "Cuvelage / Murs enterrés",
-  "Étanchéité toiture ou terrasse",
-  "Ventilation positive",
-  "Déshumidification",
-  "Diagnostic humidité",
-];
-
-const OPTIONS_BY_RATING = {
-  positive: {
-    label: "Qu'avez-vous le plus apprécié ?",
-    hint: "Vous pouvez en sélectionner plusieurs",
-    items: [
-      "Diagnostic sérieux et précis", "Expertise technique",
-      "Explication claire du problème", "Rapidité d'intervention",
-      "Professionnalisme des techniciens", "Résultats visibles",
-      "Propreté du chantier", "Rapport qualité/prix",
-      "Conseils personnalisés", "Garantie rassurante",
+// ── Config par marque ──────────────────────────────────────
+const BRANDS = {
+  mh: {
+    metier: "spécialiste du traitement de l'humidité (Mur Humide)",
+    prestationLabel: "Quel(s) traitement(s) avons-nous réalisé ?",
+    color: "#0284C7",
+    colorLight: "#E0F2FE",
+    logoUrl: "https://murhumide.fr/assets/img/logo-mur-humide.png",
+    prestations: [
+      "Traitement remontées capillaires",
+      "Traitement anti-salpêtre",
+      "Traitement des moisissures",
+      "Traitement des infiltrations d'eau",
+      "Cuvelage / Murs enterrés",
+      "Étanchéité toiture ou terrasse",
+      "Ventilation positive",
+      "Déshumidification",
+      "Diagnostic humidité",
     ],
+    options: {
+      positive: {
+        label: "Qu'avez-vous le plus apprécié ?",
+        hint: "Vous pouvez en sélectionner plusieurs",
+        items: [
+          "Diagnostic sérieux et précis", "Expertise technique",
+          "Explication claire du problème", "Rapidité d'intervention",
+          "Professionnalisme des techniciens", "Résultats visibles",
+          "Propreté du chantier", "Rapport qualité/prix",
+          "Conseils personnalisés", "Garantie rassurante",
+        ],
+      },
+      neutral: {
+        label: "Comment décririez-vous l'intervention ?",
+        hint: "Choisissez ce qui correspond le mieux",
+        items: [
+          "Travail correct dans l'ensemble", "Résultats partiels pour l'instant",
+          "Personnel sympathique", "Délais un peu longs",
+          "Prix dans la moyenne", "Quelques ajustements à prévoir",
+          "Bonne communication", "Résultats à confirmer dans le temps",
+        ],
+      },
+    },
   },
-  neutral: {
-    label: "Comment décririez-vous l'intervention ?",
-    hint: "Choisissez ce qui correspond le mieux",
-    items: [
-      "Travail correct dans l'ensemble", "Résultats partiels pour l'instant",
-      "Personnel sympathique", "Délais un peu longs",
-      "Prix dans la moyenne", "Quelques ajustements à prévoir",
-      "Bonne communication", "Résultats à confirmer dans le temps",
+  atm: {
+    metier: "spécialiste de la rénovation et isolation de l'habitat (Atriome)",
+    prestationLabel: "Quel(s) travaux avons-nous réalisé ?",
+    color: "#1B9ED9",
+    colorLight: "#EBF7FD",
+    logoUrl: "https://atriome.fr/assets/img/atriome-logo.png",
+    prestations: [
+      "Démoussage de toiture",
+      "Nettoyage et hydrofuge de toiture",
+      "Réfection de toiture",
+      "Nettoyage de gouttières",
+      "Traitement de charpente",
+      "Isolation des combles",
+      "Isolation sous rampant",
+      "Nettoyage de façade",
+      "Ravalement de façade",
+      "Hydrofuge de façade",
+      "Ventilation",
+      "Tableau électrique",
+      "Peinture intérieure",
+      "Sécurité incendie",
     ],
+    options: {
+      positive: {
+        label: "Qu'avez-vous le plus apprécié ?",
+        hint: "Vous pouvez en sélectionner plusieurs",
+        items: [
+          "Qualité du travail", "Rapidité d'intervention",
+          "Respect des délais", "Propreté du chantier",
+          "Professionnalisme de l'équipe", "Conseils et explications",
+          "Suivi du chantier", "Rapport qualité/prix",
+          "Amabilité des intervenants", "Résultat conforme aux attentes",
+        ],
+      },
+      neutral: {
+        label: "Comment décririez-vous l'intervention ?",
+        hint: "Choisissez ce qui correspond le mieux",
+        items: [
+          "Travail correct dans l'ensemble", "Délais un peu longs",
+          "Prix dans la moyenne", "Résultat à confirmer dans le temps",
+          "Équipe sympathique", "Quelques ajustements nécessaires",
+          "Bonne communication", "Intervention rapide",
+        ],
+      },
+    },
   },
 };
 
-const STAR_LABELS = ["", "Décevant", "Pas terrible", "Correct", "Très bien", "Excellent"];
-const STAR_COLORS = { 1: "#EF4444", 2: "#F97316", 3: "#EAB308", 4: "#84CC16", 5: "#22C55E" };
+const getBrand = (locationId) =>
+  locationId?.startsWith("atm") ? BRANDS.atm : BRANDS.mh;
 
-const getOptions = (r) => r >= 4 ? OPTIONS_BY_RATING.positive : OPTIONS_BY_RATING.neutral;
+const STAR_LABELS = ["", "Décevant", "Peu Satisfaisant", "Correct", "Très Satisfaisant", "Excellent"];
+const STAR_COLORS = { 1: "#EF4444", 2: "#F97316", 3: "#EAB308", 4: "#84CC16", 5: "#22C55E" };
+const getOptions = (brand, r) => r >= 4 ? brand.options.positive : brand.options.neutral;
 
 /* ══════════════════════════════════════════════════════════
    COMPOSANT
@@ -54,6 +109,7 @@ const getOptions = (r) => r >= 4 ? OPTIONS_BY_RATING.positive : OPTIONS_BY_RATIN
    ══════════════════════════════════════════════════════════ */
 export default function ReviewApp() {
   const [location, setLocation] = useState(LOCATIONS["default"]);
+  const [brand, setBrand] = useState(BRANDS.mh);
   const [step, setStep] = useState(0);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -66,6 +122,7 @@ export default function ReviewApp() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const togglePrestation = useCallback((p) =>
     setPrestations((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]), []);
@@ -73,7 +130,9 @@ export default function ReviewApp() {
   // Charge l'agence depuis ?id= au montage
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("id") || "default";
-    setLocation(LOCATIONS[id] ?? LOCATIONS["default"]);
+    const loc = LOCATIONS[id] ?? LOCATIONS["default"];
+    setLocation(loc);
+    setBrand(getBrand(id));
   }, []);
 
   const togglePoint = useCallback((p) =>
@@ -85,11 +144,11 @@ export default function ReviewApp() {
     setError("");
 
     const nbPoints = pointsForts.length;
-    const prompt = `Tu dois écrire un avis Google pour une entreprise de traitement de l'humidité (Mur Humide).
+    const prompt = `Tu dois écrire un avis Google pour une entreprise ${brand.metier}.
 
 Voici exactement ce que le client a indiqué :
 - Note : ${rating}/5 étoiles
-- Traitement(s) réalisé(s) : ${prestations.join(", ")}
+- Prestation(s) réalisée(s) : ${prestations.join(", ")}
 - Ce qu'il a sélectionné : ${pointsForts.join(", ")}
 - Ville : ${ville}
 ${commentaire.trim() ? `- Détail ajouté : ${commentaire.trim()}` : ""}
@@ -100,7 +159,7 @@ Règles strictes :
 - Langage courant, comme un vrai client qui tape sur son téléphone
 - ${nbPoints <= 1 ? "2 à 3 phrases maximum, reste concis" : "3 à 4 phrases, sans répéter"}
 - Première personne
-- Mentionner la ville et le(s) traitement(s) de façon fluide
+- Mentionner la ville et la/les prestation(s) de façon fluide
 - Orthographe et grammaire françaises irréprochables — aucune faute, aucune coquille
 - Accents corrects sur tous les mots (é, è, ê, à, ù, ç…)
 - Pas de guillemets, pas de titre, pas de mise en forme`;
@@ -156,7 +215,13 @@ Règles strictes :
   const reset = () => {
     setStep(0); setRating(0); setHoverRating(0);
     setPrestations([]); setPointsForts([]); setVille("");
-    setCommentaire(""); setReview(""); setIsEditing(false); setError("");
+    setCommentaire(""); setReview(""); setIsEditing(false); setError(""); setShowModal(false);
+  };
+
+  const goBack = () => {
+    const prev = { 1:0, 2:1, 3:2, 4:3, 5:4, 7:5, 8:1, 9:8 };
+    setStep(prev[step] ?? 0);
+    setError("");
   };
 
   const progress = step >= 1 && step <= 5 ? step / 5 : step >= 6 ? 1 : 0;
@@ -169,10 +234,13 @@ Règles strictes :
       {/* ── Progress bar ── */}
       {step >= 1 && step <= 5 && (
         <div style={s.progressWrap}>
+          <div style={s.progressRow}>
+            <button style={s.backBtn} onClick={goBack}>← Précédent</button>
+            <div style={s.stepLabel}>Étape {step} sur 5</div>
+          </div>
           <div style={s.progressTrack}>
             <div style={{ ...s.progressFill, width: `${progress * 100}%` }} />
           </div>
-          <div style={s.stepLabel}>Étape {step} sur 5</div>
         </div>
       )}
 
@@ -180,18 +248,17 @@ Règles strictes :
       {step === 0 && (
         <div style={{ ...s.card, marginTop: 40, textAlign: "center" }}>
           <div style={s.logoWrap}>
-            <img src="https://murhumide.fr/assets/img/logo-mur-humide.png"
-              alt="Mur Humide" style={s.logoImg}
+            <img src={brand.logoUrl} alt={location.name} style={s.logoImg}
               onError={(e) => { e.target.style.display = "none"; }} />
           </div>
           <div style={s.welcomeStars}>★★★★★</div>
-          <h1 style={s.h1}>Comment s'est passée votre intervention&nbsp;?</h1>
+          <h1 style={s.h1}>Comment s'est passée notre intervention&nbsp;?</h1>
           <p style={s.body}>
             Partagez votre expérience avec <strong style={{ color: "#0F172A" }}>{location.shortName || location.name}</strong> pour aider les futurs clients.
           </p>
-          <div style={s.pill}>⏱ 15 secondes</div>
-          <button style={s.primaryBtn} onClick={() => setStep(1)}>Démarrer</button>
-          <p style={s.disclaimer}>Votre avis nous aide à progresser et à être trouvés par ceux qui en ont besoin</p>
+          <div style={{ ...s.pill, background: brand.colorLight, color: brand.color }}>⏱ 15 secondes</div>
+          <button style={{ ...s.primaryBtn, background: brand.color }} onClick={() => setStep(1)}>Démarrer</button>
+          <p style={s.disclaimer}>Votre avis nous aide à progresser et à améliorer notre visibilité auprès de ceux qui en ont besoin</p>
         </div>
       )}
 
@@ -226,20 +293,20 @@ Règles strictes :
       {/* ── 2 : Prestation(s) ── */}
       {step === 2 && (
         <div style={s.card}>
-          <p style={s.questionLabel}>Quel(s) traitement(s) avons-nous réalisé&nbsp;?</p>
+          <p style={s.questionLabel}>{brand.prestationLabel}&nbsp;?</p>
           <p style={s.hint}>Vous pouvez en sélectionner plusieurs</p>
           <div style={s.chipGrid}>
-            {PRESTATIONS.map((opt) => {
+            {brand.prestations.map((opt) => {
               const sel = prestations.includes(opt);
               return (
-                <button key={opt} style={chip(sel, rating)} onClick={() => togglePrestation(opt)}>
+                <button key={opt} style={chip(sel, rating, brand.color, brand.colorLight)} onClick={() => togglePrestation(opt)}>
                   {sel ? "✓ " : ""}{opt}
                 </button>
               );
             })}
           </div>
           <button
-            style={{ ...s.primaryBtn, opacity: prestations.length > 0 ? 1 : 0.4 }}
+            style={{ ...s.primaryBtn, background: brand.color, opacity: prestations.length > 0 ? 1 : 0.4 }}
             disabled={prestations.length === 0}
             onClick={() => setStep(3)}
           >Continuer</button>
@@ -248,7 +315,7 @@ Règles strictes :
 
       {/* ── 3 : Options (positives ou nuancées) ── */}
       {step === 3 && (() => {
-        const opts = getOptions(rating);
+        const opts = getOptions(brand, rating);
         return (
           <div style={s.card}>
             <p style={s.questionLabel}>{opts.label}</p>
@@ -257,14 +324,14 @@ Règles strictes :
               {opts.items.map((opt) => {
                 const sel = pointsForts.includes(opt);
                 return (
-                  <button key={opt} style={chip(sel, rating)} onClick={() => togglePoint(opt)}>
+                  <button key={opt} style={chip(sel, rating, brand.color, brand.colorLight)} onClick={() => togglePoint(opt)}>
                     {sel ? "✓ " : ""}{opt}
                   </button>
                 );
               })}
             </div>
             <button
-              style={{ ...s.primaryBtn, opacity: pointsForts.length > 0 ? 1 : 0.4 }}
+              style={{ ...s.primaryBtn, background: brand.color, opacity: pointsForts.length > 0 ? 1 : 0.4 }}
               disabled={pointsForts.length === 0}
               onClick={() => setStep(4)}
             >Continuer</button>
@@ -338,14 +405,53 @@ Règles strictes :
             onClick={() => setIsEditing((v) => !v)}>
             {isEditing ? "✅ Valider les modifications" : "✏️ Modifier l'avis"}
           </button>
-          <button style={{ ...s.primaryBtn, marginTop: 16 }} onClick={handlePublish}>
-            {copied ? "✅ Copié ! Ouverture de Google…" : "Publier sur Google"}
+          <button style={{ ...s.primaryBtn, marginTop: 16 }} onClick={() => setShowModal(true)}>
+            Publier sur Google
           </button>
-          <button style={s.copyBtn} onClick={handleCopy}>
-            {copied ? "✅ Copié dans le presse-papiers" : "📋 Copier uniquement"}
-          </button>
-          <p style={s.disclaimer}>Collez l'avis dans la fenêtre Google qui s'ouvre, sélectionnez votre note et publiez.</p>
+          <button style={s.ghostBtn} onClick={goBack}>← Modifier mes réponses</button>
           <button style={s.resetBtn} onClick={reset}>Recommencer</button>
+        </div>
+      )}
+
+      {/* ── MODAL — guide de publication ── */}
+      {showModal && (
+        <div style={s.overlay} onClick={() => setShowModal(false)}>
+          <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+            <button style={s.modalClose} onClick={() => setShowModal(false)}>✕</button>
+            <div style={{ textAlign: "center", fontSize: 26, letterSpacing: 3, color: "#FBBF24", marginBottom: 8 }}>
+              {displayStars(rating)}
+            </div>
+            <h2 style={{ ...s.h2, textAlign: "center", marginBottom: 4 }}>Publiez votre avis</h2>
+            <p style={{ ...s.hint, textAlign: "center", marginBottom: 16 }}>Suivez les 3 étapes ci-dessous</p>
+            <div style={s.stepRow}>
+              <div style={s.stepNum}>1</div>
+              <div style={s.stepText}>Copiez votre avis</div>
+            </div>
+            <div style={s.reviewBoxModal}>
+              <p style={s.reviewText}>{review}</p>
+            </div>
+            <button style={s.copyBtnModal} onClick={handleCopy}>
+              {copied ? "✅ Copié !" : "📋 Copier le texte"}
+            </button>
+            <div style={{ ...s.stepRow, marginTop: 16, opacity: copied ? 1 : 0.4 }}>
+              <div style={s.stepNum}>2</div>
+              <div style={s.stepText}>Ouvrez Google et collez</div>
+            </div>
+            <button
+              style={{ ...s.primaryBtn, marginTop: 8, opacity: copied ? 1 : 0.4 }}
+              disabled={!copied}
+              onClick={() => window.open(location.googleReviewUrl, "_blank")}
+            >
+              Ouvrir ma fiche Google
+            </button>
+            <div style={{ ...s.stepRow, marginTop: 16, opacity: copied ? 1 : 0.4 }}>
+              <div style={s.stepNum}>3</div>
+              <div style={s.stepText}>Choisissez votre note ⭐ et publiez</div>
+            </div>
+            <p style={{ ...s.disclaimer, marginTop: 16 }}>
+              Collez le texte dans le champ "Votre avis" sur Google, sélectionnez vos étoiles, puis cliquez sur Publier.
+            </p>
+          </div>
         </div>
       )}
 
@@ -361,12 +467,12 @@ Règles strictes :
               <p style={{ ...s.hint, marginBottom: 0 }}>Aidez-nous à comprendre ce qui s'est passé</p>
             </div>
           </div>
-          <p style={s.questionLabel}>Quel(s) traitement(s) concernait l'intervention&nbsp;?</p>
+          <p style={s.questionLabel}>{brand.prestationLabel}&nbsp;?</p>
           <div style={{ ...s.chipGrid, marginBottom: 20 }}>
-            {PRESTATIONS.map((opt) => {
+            {brand.prestations.map((opt) => {
               const sel = prestations.includes(opt);
               return (
-                <button key={opt} style={chip(sel, rating)} onClick={() => togglePrestation(opt)}>
+                <button key={opt} style={chip(sel, rating, brand.color, brand.colorLight)} onClick={() => togglePrestation(opt)}>
                   {sel ? "✓ " : ""}{opt}
                 </button>
               );
@@ -379,11 +485,10 @@ Règles strictes :
             placeholder="Décrivez ce qui n'a pas fonctionné…" rows={5} />
           <button
             style={{ ...s.primaryBtn, background: "#64748B", marginTop: 20, opacity: sending ? 0.6 : 1 }}
-            onClick={submitFeedback}
-            disabled={sending}
-          >
+            onClick={submitFeedback} disabled={sending}>
             {sending ? "Envoi en cours…" : "Envoyer mon retour"}
           </button>
+          <button style={s.ghostBtn} onClick={goBack}>← Précédent</button>
           <p style={s.disclaimer}>Ce retour est transmis directement à notre équipe, il ne sera pas publié sur Google.</p>
         </div>
       )}
@@ -410,14 +515,14 @@ Règles strictes :
 /* ══════════════════════════════════════════════════════════
    STYLES
 ══════════════════════════════════════════════════════════ */
-const chip = (selected, rating = 5) => {
+const chip = (selected, rating = 5, brandColor = "#0284C7", brandColorLight = "#E0F2FE") => {
   const isNegative = rating <= 2;
   return {
     padding: "10px 14px", borderRadius: 10,
-    border: selected ? `2px solid ${isNegative ? "#DC2626" : "#0369A1"}` : "2px solid #E2E8F0",
-    background: selected ? (isNegative ? "#FEF2F2" : "#E0F2FE") : "#FFFFFF",
+    border: selected ? `2px solid ${isNegative ? "#DC2626" : brandColor}` : "2px solid #E2E8F0",
+    background: selected ? (isNegative ? "#FEF2F2" : brandColorLight) : "#FFFFFF",
     fontSize: 13, fontWeight: selected ? 600 : 400,
-    color: selected ? (isNegative ? "#991B1B" : "#0369A1") : "#475569",
+    color: selected ? (isNegative ? "#991B1B" : brandColor) : "#475569",
     cursor: "pointer", transition: "all 0.12s",
     userSelect: "none", lineHeight: 1.3, textAlign: "left",
   };
@@ -427,7 +532,9 @@ const s = {
   page: { minHeight: "100vh", background: "#F0F9FF", display: "flex", flexDirection: "column",
     alignItems: "center", padding: "0 16px 56px" },
   progressWrap: { width: "100%", maxWidth: 460, padding: "20px 0 0" },
-  progressTrack: { height: 3, background: "#BAE6FD", borderRadius: 2, overflow: "hidden" },
+  progressRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  backBtn: { background: "none", border: "none", fontSize: 13, color: "#94A3B8", cursor: "pointer", fontFamily: "inherit", padding: 0, fontWeight: 500 },
+  stepLabel: { fontSize: 11, color: "#7DD3FC", fontWeight: 500, letterSpacing: 0.3, textTransform: "uppercase" },
   progressFill: { height: "100%", background: "#0284C7", borderRadius: 2,
     transition: "width 0.35s cubic-bezier(.4,0,.2,1)" },
   stepLabel: { fontSize: 11, color: "#7DD3FC", fontWeight: 500, textAlign: "right",
@@ -453,9 +560,7 @@ const s = {
   ghostBtn: { display: "block", width: "100%", padding: "13px", marginTop: 10,
     borderRadius: 14, background: "transparent", color: "#64748B", fontSize: 14,
     fontWeight: 500, border: "2px solid #E2E8F0", cursor: "pointer" },
-  copyBtn: { display: "block", width: "100%", padding: "13px", marginTop: 10,
-    borderRadius: 14, background: "#F0FDF4", color: "#15803D", fontSize: 14,
-    fontWeight: 600, border: "2px solid #BBF7D0", cursor: "pointer" },
+  copyBtn: { display: "block", width: "100%", padding: "13px", marginTop: 10, borderRadius: 14, background: "#F0FDF4", color: "#15803D", fontSize: 14, fontWeight: 600, border: "2px solid #BBF7D0", cursor: "pointer" },
   resetBtn: { display: "block", width: "100%", padding: "10px", marginTop: 14,
     borderRadius: 14, background: "transparent", color: "#CBD5E1", fontSize: 12,
     fontWeight: 400, border: "none", cursor: "pointer" },
@@ -481,4 +586,12 @@ const s = {
     marginTop: 14, lineHeight: 1.6, padding: "0 4px" },
   thankYouIcon: { fontSize: 52, marginBottom: 20 },
   separator: { height: 1, background: "#E2E8F0", margin: "20px 0" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100 },
+  modal: { width: "100%", maxWidth: 480, background: "#FFFFFF", borderRadius: "20px 20px 0 0", padding: "28px 24px 40px", boxSizing: "border-box", position: "relative", maxHeight: "90vh", overflowY: "auto" },
+  modalClose: { position: "absolute", top: 16, right: 16, background: "#F1F5F9", border: "none", borderRadius: "50%", width: 32, height: 32, fontSize: 14, cursor: "pointer", color: "#64748B" },
+  stepRow: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10, transition: "opacity 0.2s" },
+  stepNum: { width: 28, height: 28, borderRadius: "50%", background: "#0284C7", color: "white", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  stepText: { fontSize: 15, fontWeight: 600, color: "#0F172A" },
+  reviewBoxModal: { background: "#F8FAFC", borderRadius: 12, padding: "14px 16px", border: "1px solid #E2E8F0", marginBottom: 10 },
+  copyBtnModal: { display: "block", width: "100%", padding: "13px", borderRadius: 14, background: "#F0FDF4", color: "#15803D", fontSize: 14, fontWeight: 600, border: "2px solid #BBF7D0", cursor: "pointer" },
 };
